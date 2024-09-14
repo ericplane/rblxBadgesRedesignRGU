@@ -1,6 +1,8 @@
-# My Chrome Extension
+# What is this extension?
 
-This is a custom Chrome extension that provides [brief description of your extension's functionality].
+This is a custom Chrome extension that provides a redesign of how the badge section on the games page looks like for RoGold Ultimate users for Roblox.
+
+![image](https://github.com/user-attachments/assets/ffcd88c9-afaa-4a54-9e6d-bfabcb78380c)
 
 ## Installation Instructions
 
