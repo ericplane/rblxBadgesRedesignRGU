@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Roblox Badge Organizer",
+  "version": "1.0",
+  "description": "Modifies the badge section on Roblox game pages into infinite carousels and categorizes them.",
+  "permissions": ["activeTab"],
+  "content_scripts": [
+    {
+      "matches": ["https://www.roblox.com/*"],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
