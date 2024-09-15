@@ -27,7 +27,7 @@ async function organizeBadges() {
   await clickUntilGone(ownedContainer, '.btn-control-md');
   document.querySelector(
     '#loading-indicator span'
-  ).textContent = `Organzing badges... (${badgesLoaded}/${totalBadges})`;
+  ).textContent = `Organizing badges... (${badgesLoaded}/${totalBadges})`;
   let notOwnedContainer = document.createElement('div');
   notOwnedContainer.classList.add('game-badges-list');
   notOwnedContainer.classList.add('content-hidden-and-frozen');
