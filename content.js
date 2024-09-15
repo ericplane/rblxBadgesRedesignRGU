@@ -1,3 +1,6 @@
+let badgesLoaded = 0;
+let totalBadges = 0;
+
 window.addEventListener('load', function () {
   console.log('Page fully loaded, including other extensions.');
 
@@ -16,6 +19,7 @@ async function organizeBadges() {
   let ownedContainer = document.querySelector('.game-badges-list');
   ownedContainer.classList.add('content-hidden-and-frozen');
   createLoadingIndicator();
+  await getBadges();
   await clickUntilGone(ownedContainer, '.btn-control-md');
   let notOwnedContainer = ownedContainer.cloneNode(true);
 
@@ -51,6 +55,41 @@ async function organizeBadges() {
       document.querySelector('#loading-indicator').remove();
     }, 1000);
   }, 1000);
+}
+
+async function getBadges() {
+  try {
+    const url = new URL(window.location.href);
+    const placeId = url.pathname.split('/')[2];
+    console.log(placeId);
+
+    const universeResponse = await fetch(
+      `https://apis.roblox.com/universes/v1/places/${placeId}/universe`
+    );
+    const universeData = await universeResponse.json();
+    const universeId = universeData.universeId;
+
+    let nextPageCursor = null;
+    const pageSize = 100;
+
+    do {
+      const badgesResponse = await fetch(
+        `https://badges.roblox.com/v1/universes/${universeId}/badges?limit=${pageSize}${
+          nextPageCursor ? `&cursor=${nextPageCursor}` : ''
+        }`
+      );
+      const badgesData = await badgesResponse.json();
+
+      totalBadges += badgesData.data.length;
+      nextPageCursor = badgesData.nextPageCursor;
+    } while (nextPageCursor);
+
+    console.log(`Total badges: ${totalBadges}`);
+    return totalBadges;
+  } catch (error) {
+    console.error('Error fetching badges:', error);
+    throw error;
+  }
 }
 
 function createLoadingIndicator() {
@@ -97,6 +136,10 @@ function clickUntilGone(element, buttonSelector) {
       if (seeMoreButton && seeMoreButton.offsetParent !== null) {
         console.log('See More button is visible, clicking...');
         seeMoreButton.click();
+        badgesLoaded = document.querySelector('.stack-list').childElementCount;
+        document.querySelector(
+          '#loading-indicator span'
+        ).textContent = `Loading badges... (${badgesLoaded}/${totalBadges})`;
       } else {
         console.log('See More button no longer visible.');
         clearInterval(clickInterval);
