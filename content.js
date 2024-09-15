@@ -237,44 +237,6 @@ function clickUntilGone(element, buttonSelector) {
   });
 }
 
-function copyBadgeStatsInfo(originalContainer, clonedContainer) {
-  let originalStatsItems = originalContainer.querySelectorAll(
-    '.badge-stats-container li'
-  );
-  let clonedStatsItems = clonedContainer.querySelectorAll(
-    '.badge-stats-container li'
-  );
-
-  originalStatsItems.forEach((originalItem, index) => {
-    let originalText = originalItem
-      .querySelector('.badge-stats-info')
-      .textContent.trim();
-
-    if (clonedStatsItems[index]) {
-      let clonedTextElement =
-        clonedStatsItems[index].querySelector('.badge-stats-info');
-
-      if (clonedTextElement) {
-        if (originalText.includes('Unclaimed')) {
-          let numberPart = originalText.split('Unclaimed')[0];
-          clonedTextElement.innerHTML = `${numberPart} <div class="text-unclaimed">Unclaimed</div>`;
-        } else if (originalText.includes('Claimed')) {
-          let numberPart = originalText.split('Claimed')[0];
-          clonedTextElement.innerHTML = `${numberPart} <div class="text-claimed" title="${originalText}">Claimed</div>`;
-          clonedTextElement.style.color = '#FFDC64'; // Apply color
-        } else {
-          let words = originalText.split(' ');
-          if (words.length === 2) {
-            clonedTextElement.innerHTML = `${words[0]} <div class="text-rarity">${words[1]}</div>`;
-          } else {
-            clonedTextElement.textContent = originalText;
-          }
-        }
-      }
-    }
-  });
-}
-
 function sortBadgesByWonEver(container) {
   return new Promise((resolve, reject) => {
     try {
@@ -520,7 +482,7 @@ async function updateBadges(userId) {
 
   for (let badge of fetchedBadges) {
     const placeId = badge.awarder.id;
-    const badgeName = badge.name;
+    const badgeName = badge.name.trim();
 
     if (!updatedBadges[placeId]) {
       updatedBadges[placeId] = [];
