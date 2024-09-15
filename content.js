@@ -8,6 +8,23 @@ window.addEventListener('load', function () {
     let badgeContainer = document.querySelector('.game-badges-list');
     if (badgeContainer) {
       clearInterval(checkForBadgeContainer);
+
+      const stackList = document.querySelector(
+        '.virtual-event-game-details-container .stack-list'
+      );
+
+      if (stackList) {
+        const itemCount = stackList.children.length;
+
+        if (itemCount === 1) {
+          // Apply 1,1 grid configuration
+          stackList.style.gridTemplateColumns = '1fr';
+        } else if (itemCount >= 2) {
+          // Apply 2,1 grid configuration
+          stackList.style.gridTemplateColumns = 'repeat(2, 1fr)';
+        }
+      }
+
       organizeBadges();
     } else {
       console.log('Badge container not found, retrying...');
@@ -51,8 +68,6 @@ async function organizeBadges() {
       '<h2>Locked Badges</h2>';
 
     setTimeout(() => {
-      //sortBadgesByWonEver(notOwnedContainer);
-
       document.querySelector(
         '#loading-indicator span'
       ).textContent = `Formatting badges... (${badgesLoaded}/${totalBadges})`;
@@ -88,26 +103,16 @@ async function updateBadgeStorage() {
 }
 
 async function moveBadgesWithOpacity(ownedContainer, notOwnedContainer) {
-  const notOwnedList = notOwnedContainer.querySelector('.stack-list');
+  const notOwnedList = notOwnedContainer.querySelector(
+    '.badge-container .stack-list'
+  );
   const badgeRows = Array.from(ownedContainer.querySelectorAll('.badge-row'));
   let index = 0;
   const url = new URL(window.location.href);
   const placeId = url.pathname.split('/')[2];
 
-  // Function to get badge names for the given placeId
-  async function getBadgesForPlace(placeId) {
-    // Implement your logic to get badges from local storage
-    // This should return a list of badge names for the placeId
-    return new Promise((resolve) => {
-      chrome.storage.local.get(['badges'], (result) => {
-        const badges = result.badges || {};
-        resolve(badges[placeId] || []);
-      });
-    });
-  }
-
   // Function to move a batch of badges
-  function moveNextBatch() {
+  async function moveNextBatch() {
     const batchSize = 50; // Adjust batch size to avoid freezing the browser
 
     // Set opacity to 0.5 for all badge rows
@@ -117,7 +122,7 @@ async function moveBadgesWithOpacity(ownedContainer, notOwnedContainer) {
     }
 
     // Check ownership of badges and adjust opacity
-    getBadgesForPlace(placeId).then((badgeNames) => {
+    await getBadgesForPlace(placeId).then((badgeNames) => {
       badgeRows.forEach((row) => {
         const badgeNameElement = row.querySelector('.badge-name'); // Adjust selector as needed
         const badgeName = badgeNameElement
@@ -212,8 +217,9 @@ function clickUntilGone(element, buttonSelector) {
           seeMoreButton.click();
           lastClickedTime = now;
 
-          badgesLoaded =
-            document.querySelector('.stack-list').childElementCount;
+          badgesLoaded = document.querySelector(
+            '.badge-container .stack-list'
+          ).childElementCount;
           document.querySelector(
             '#loading-indicator span'
           ).textContent = `Loading badges... (${badgesLoaded}/${totalBadges})`;
@@ -285,7 +291,7 @@ function sortBadgesByWonEver(container) {
         return bWonEver - aWonEver;
       });
 
-      let badgeList = container.querySelector('.stack-list');
+      let badgeList = container.querySelector('.badge-container .stack-list');
 
       if (!badgeList) {
         console.error('Badge list container not found.');
@@ -432,27 +438,30 @@ function makeCarousel(container) {
   if (badgeRows.length === 0) {
     return;
   }
-  let carouselList = container.querySelector('.stack-list');
-  const scrollAmountStep = 100;
-
+  let carouselList = container.querySelector('.badge-container .stack-list');
+  let scrollAmountStep = 100;
   let targetScrollAmount = 0;
   let currentScrollAmount = 0;
 
-  carouselList.addEventListener('wheel', (event) => {
-    event.preventDefault();
+  chrome.storage.local.get(['scrollAmountStep'], (result) => {
+    scrollAmountStep = result.scrollAmountStep || 100;
 
-    const delta = event.deltaY > 0 ? scrollAmountStep : -scrollAmountStep;
-    targetScrollAmount += delta;
+    carouselList.addEventListener('wheel', (event) => {
+      event.preventDefault();
 
-    targetScrollAmount = Math.max(
-      0,
-      Math.min(
-        targetScrollAmount,
-        carouselList.scrollWidth - carouselList.clientWidth
-      )
-    );
+      const delta = event.deltaY > 0 ? scrollAmountStep : -scrollAmountStep;
+      targetScrollAmount += delta;
 
-    animateScroll();
+      targetScrollAmount = Math.max(
+        0,
+        Math.min(
+          targetScrollAmount,
+          carouselList.scrollWidth - carouselList.clientWidth
+        )
+      );
+
+      animateScroll();
+    });
   });
 
   function animateScroll() {
@@ -505,23 +514,29 @@ async function fetchBadgesUntilDuplicate(userId) {
 async function updateBadges(userId) {
   const fetchedBadges = await fetchBadgesUntilDuplicate(userId);
   const storedBadges = await getStoredBadges();
-  let updatedBadges = {};
+  let updatedBadges = { ...storedBadges };
+  const storedLength = storedBadges.length;
   let newBadgeFound = false;
 
   for (let badge of fetchedBadges) {
     const placeId = badge.awarder.id;
     const badgeName = badge.name;
 
-    if (!storedBadges[placeId]) {
-      storedBadges[placeId] = [];
+    if (!updatedBadges[placeId]) {
+      updatedBadges[placeId] = [];
     }
 
-    if (!storedBadges[placeId].includes(badgeName)) {
-      storedBadges[placeId].push(badgeName);
+    if (!updatedBadges[placeId].includes(badgeName)) {
+      updatedBadges[placeId].push(badgeName);
       newBadgeFound = true;
     }
+  }
 
-    updatedBadges[placeId] = storedBadges[placeId];
+  if (storedLength > updatedBadges.length) {
+    console.log(
+      `Error: Fetched badges for placeId ${placeId} are fewer than stored badges.`
+    );
+    newBadgeFound = false;
   }
 
   if (newBadgeFound) {
@@ -549,4 +564,5 @@ async function checkAndUpdateBadges(userId) {
 async function getBadgesForPlace(placeId) {
   const badges = await getBadgesByPlaceId(placeId);
   console.log(`Badges for Place ID ${placeId}:`, badges);
+  return badges;
 }

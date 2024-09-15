@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Extension Options</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 10px;
+      }
+
+      button {
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Extension Settings</h2>
+
+    <!-- Scroll Amount Step Adjustment -->
+    <label>
+      Scroll Amount Step:
+      <input type="number" id="scrollAmountStep" />
+    </label>
+
+    <!-- Button to Save Settings -->
+    <button id="saveSettings">Save Settings</button>
+
+    <!-- Button to Clear Local Storage -->
+    <button id="clearLocalStorage">Clear Local Storage</button>
+
+    <div id="status" style="margin-top: 10px"></div>
+
+    <script src="options.js"></script>
+  </body>
+</html>

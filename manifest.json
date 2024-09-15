@@ -1,7 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Roblox Badge Organizer",
-  "version": "1.0",
+  "version": "1.2",
+  "options_page": "options.html",
   "description": "Modifies the badge section on Roblox game pages into infinite carousels and categorizes them.",
   "permissions": ["activeTab", "storage"],
   "content_scripts": [
@@ -11,5 +12,9 @@
       "css": ["styles.css"],
       "run_at": "document_idle"
     }
-  ]
+  ],
+  "action": {
+    "default_popup": "options.html",
+    "default_title": "Badge Organizer"
+  }
 }
