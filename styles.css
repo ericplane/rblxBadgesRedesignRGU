@@ -1,3 +1,7 @@
+.badge-row {
+  overflow: hidden !important;
+}
+
 .stack-list {
   display: flex;
   flex-direction: row;
@@ -60,7 +64,11 @@
   text-wrap: wrap !important;
   line-height: 13px !important;
   text-align: center !important;
-  height: auto !important;
+  height: 70px !important;
+  -webkit-line-clamp: 4 !important;
+  line-clamp: 4 !important;
+  -webkit-box-orient: vertical !important;
+  display: -webkit-box !important;
 }
 
 .para-overflow::before {
@@ -73,11 +81,11 @@
 
 .badge-name {
   font-size: 16px !important;
+  display: inline-block !important;
 }
 
 .para-overflow,
 .badge-name {
-  display: inline-block !important;
   justify-content: space-around !important;
   text-align: center !important;
   width: 178px !important;
