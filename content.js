@@ -163,6 +163,11 @@ async function getBadges() {
     const pageSize = 100;
     const gameBadges = []; // Initialize the array to store badge data
 
+    // Function to introduce a delay
+    function delay(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
     do {
       const badgesResponse = await fetch(
         `https://badges.roblox.com/v1/universes/${universeId}/badges?limit=${pageSize}${
@@ -175,6 +180,9 @@ async function getBadges() {
       gameBadges.push(...badgesData.data);
 
       nextPageCursor = badgesData.nextPageCursor;
+
+      // Introduce a small delay to avoid hitting rate limits
+      await delay(500); // 500 milliseconds delay
     } while (nextPageCursor);
 
     totalBadges = gameBadges.length;
@@ -200,28 +208,46 @@ function getRarityLevel(rarity) {
 
 async function fetchBadgeImagesInChunks(badgeIds) {
   const chunkSize = 20;
+  const maxRetries = 3; // Maximum number of retries
+  const retryDelay = 5000; // Delay in milliseconds (5 seconds)
   let imagesLoaded = 0;
   const imageMap = {};
 
-  // Helper function to handle a chunk of badge IDs
+  // Helper function to handle a chunk of badge IDs with retry logic
   async function fetchChunk(chunk) {
     const apiUrl = `https://thumbnails.roblox.com/v1/badges/icons?badgeIds=${chunk.join(
       ','
     )}&size=150x150&format=Png&isCircular=true`;
 
-    const response = await fetch(apiUrl);
-    const data = await response.json();
+    let attempts = 0;
 
-    if (data && data.data) {
-      data.data.forEach((badge) => {
-        imageMap[badge.targetId] = badge.imageUrl;
-        imagesLoaded += 1;
-        document.querySelector(
-          '#loading-indicator span'
-        ).textContent = `Loading badge images... (${imagesLoaded}/${totalBadges})`;
-      });
-    } else {
-      throw new Error('Failed to fetch badge images for chunk');
+    while (attempts < maxRetries) {
+      try {
+        const response = await fetch(apiUrl);
+        const data = await response.json();
+
+        if (data && data.data) {
+          data.data.forEach((badge) => {
+            imageMap[badge.targetId] = badge.imageUrl;
+            imagesLoaded += 1;
+            document.querySelector(
+              '#loading-indicator span'
+            ).textContent = `Loading badge images... (${imagesLoaded}/${totalBadges})`;
+          });
+          return; // Exit the loop if successful
+        } else {
+          throw new Error('No data received');
+        }
+      } catch (error) {
+        attempts += 1;
+        if (attempts >= maxRetries) {
+          throw new Error(
+            `Failed to fetch badge images after ${maxRetries} attempts`
+          );
+        }
+        console.warn(`Retrying fetch for chunk due to error: ${error.message}`);
+        await new Promise((resolve) => setTimeout(resolve, retryDelay)); // Wait before retrying
+      }
     }
   }
 
@@ -235,69 +261,77 @@ async function fetchBadgeImagesInChunks(badgeIds) {
 }
 
 async function generateBadges(gameBadges, ownedContainer) {
+  const chunkSize = 20; // Number of badges to process in each chunk
   let stackList = ownedContainer.querySelector('.stack-list');
   stackList.innerHTML = ''; // Clear the current list of badges
 
   // Fetch badge images based on their IDs
   const badgeIds = gameBadges.map((badge) => badge.id);
   const badgeImages = await fetchBadgeImagesInChunks(badgeIds);
-
-  let badgesLoaded = 0;
   const totalBadges = gameBadges.length;
 
   // Function to update the loading indicator
   function updateLoadingIndicator() {
     document.querySelector(
       '#loading-indicator span'
-    ).textContent = `Loading badges...`;
+    ).textContent = `Loading badges... (${badgesLoaded}/${totalBadges})`;
   }
 
-  updateLoadingIndicator();
+  // Function to create and append badge rows
+  function createBadgeRows(badgeChunk) {
+    badgeChunk.forEach((badge) => {
+      badgesLoaded += 1;
+      updateLoadingIndicator();
 
-  for (let badge of gameBadges) {
-    badgesLoaded++;
+      let badgeRow = document.createElement('li');
+      badgeRow.classList.add('stack-row', 'badge-row');
+      badgeRow.style.opacity = '1'; // Add the opacity style
 
-    let badgeRow = document.createElement('li');
-    badgeRow.classList.add('stack-row', 'badge-row');
-    badgeRow.style.opacity = '1'; // Add the opacity style
+      const imageUrl = badgeImages[badge.id];
 
-    const imageUrl = badgeImages[badge.id];
-
-    // Create the HTML structure for each badge
-    badgeRow.innerHTML = `
-      <div class="badge-image">
-        <a class="" href="https://www.roblox.com/badges/${
-          badge.id
-        }/${encodeURIComponent(badge.name)}">
-          <span class="thumbnail-2d-container badge-image-container">
-            <img class="" src="${imageUrl}" alt="${badge.name}" title="${
-      badge.name
-    }">
-          </span>
-        </a>
-      </div>
-      <div class="badge-content">
-        <div class="badge-data-container">
-          <div class="font-header-2 badge-name" title="${badge.name}">${
-      badge.name
-    }</div>
-          <p class="para-overflow">${
-            badge.description || '[No description available]'
-          }</p>
-          <div class="formatted-stats">
-            <p class="para-badgestat">${(
-              badge.statistics.winRatePercentage * 100
-            ).toFixed(1)}% - ${getRarityLevel(
-      (badge.statistics.winRatePercentage * 100).toFixed(1)
-    )}</p>
-            <p class="para-badgestat">${badge.statistics.awardedCount.toLocaleString()} exist</p>
+      // Create the HTML structure for each badge
+      badgeRow.innerHTML = `
+        <div class="badge-image">
+          <a class="" href="https://www.roblox.com/badges/${
+            badge.id
+          }/${encodeURIComponent(badge.name)}">
+            <span class="thumbnail-2d-container badge-image-container">
+              <img class="" src="${imageUrl}" alt="${badge.name}" title="${
+        badge.name
+      }">
+            </span>
+          </a>
+        </div>
+        <div class="badge-content">
+          <div class="badge-data-container">
+            <div class="font-header-2 badge-name" title="${badge.name}">${
+        badge.name
+      }</div>
+            <p class="para-overflow">${
+              badge.description || '[No description available]'
+            }</p>
+            <div class="formatted-stats">
+              <p class="para-badgestat">${(
+                badge.statistics.winRatePercentage * 100
+              ).toFixed(1)}% - ${getRarityLevel(
+        (badge.statistics.winRatePercentage * 100).toFixed(1)
+      )}</p>
+              <p class="para-badgestat">${badge.statistics.awardedCount.toLocaleString()} exist</p>
+            </div>
           </div>
         </div>
-      </div>
-    `;
+      `;
 
-    // Append the badge row to the stack list
-    stackList.appendChild(badgeRow);
+      // Append the badge row to the stack list
+      stackList.appendChild(badgeRow);
+    });
+  }
+
+  // Process badges in chunks
+  for (let i = 0; i < gameBadges.length; i += chunkSize) {
+    const badgeChunk = gameBadges.slice(i, i + chunkSize);
+    createBadgeRows(badgeChunk);
+    await new Promise((resolve) => setTimeout(resolve, 500)); // Delay between chunks to prevent performance issues
   }
 }
 
@@ -306,7 +340,7 @@ function createLoadingIndicator() {
   loadingIndicator.id = 'loading-indicator';
 
   const loadingMessage = document.createElement('span');
-  loadingMessage.textContent = 'Loading badges...';
+  loadingMessage.textContent = 'Retrieving badges...';
 
   const spinner = document.createElement('div');
 
