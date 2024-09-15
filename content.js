@@ -36,15 +36,18 @@ async function organizeBadges() {
   let ownedContainer = document.querySelector('.game-badges-list');
   ownedContainer.classList.add('content-hidden-and-frozen');
   createLoadingIndicator();
-  await getBadges();
+  const gameBadges = await getBadges();
   document.querySelector(
     '#loading-indicator span'
   ).textContent = `Fetching user badges... (First time this runs it may take a while)`;
   await updateBadgeStorage();
-  await clickUntilGone(ownedContainer, '.btn-control-md');
+  await generateBadges(gameBadges, ownedContainer);
+  document
+    .querySelector('.game-badges-list .btn-control-md')
+    .parentElement.remove();
   document.querySelector(
     '#loading-indicator span'
-  ).textContent = `Organizing badges... (${badgesLoaded}/${totalBadges})`;
+  ).textContent = `Organizing badges...`;
   let notOwnedContainer = document.createElement('div');
   notOwnedContainer.classList.add('game-badges-list');
   notOwnedContainer.classList.add('content-hidden-and-frozen');
@@ -70,10 +73,8 @@ async function organizeBadges() {
     setTimeout(() => {
       document.querySelector(
         '#loading-indicator span'
-      ).textContent = `Formatting badges... (${badgesLoaded}/${totalBadges})`;
+      ).textContent = `Formatting badges...`;
 
-      formatBadgeRow(ownedContainer);
-      formatBadgeRow(notOwnedContainer);
       setTitleIfOverflow(ownedContainer);
       setTitleIfOverflow(notOwnedContainer);
 
@@ -160,6 +161,7 @@ async function getBadges() {
 
     let nextPageCursor = null;
     const pageSize = 100;
+    const gameBadges = []; // Initialize the array to store badge data
 
     do {
       const badgesResponse = await fetch(
@@ -169,15 +171,133 @@ async function getBadges() {
       );
       const badgesData = await badgesResponse.json();
 
-      totalBadges += badgesData.data.length;
+      // Push the fetched badges into the gameBadges array
+      gameBadges.push(...badgesData.data);
+
       nextPageCursor = badgesData.nextPageCursor;
     } while (nextPageCursor);
 
-    console.log(`Total badges: ${totalBadges}`);
-    return totalBadges;
+    totalBadges = gameBadges.length;
+    console.log(`Total badges: ${gameBadges.length}`);
+    return gameBadges; // Return the array containing all the badges
   } catch (error) {
     console.error('Error fetching badges:', error);
     throw error;
+  }
+}
+
+function getRarityLevel(rarity) {
+  if (rarity >= 90) return 'Freebie';
+  if (rarity >= 80) return 'Cake Walk';
+  if (rarity >= 50) return 'Easy';
+  if (rarity >= 30) return 'Moderate';
+  if (rarity >= 20) return 'Challenging';
+  if (rarity >= 10) return 'Hard';
+  if (rarity >= 5) return 'Extreme';
+  if (rarity >= 1) return 'Insane';
+  return 'Impossible';
+}
+
+async function fetchBadgeImagesInChunks(badgeIds) {
+  const chunkSize = 20;
+  let imagesLoaded = 0;
+  const imageMap = {};
+
+  // Helper function to handle a chunk of badge IDs
+  async function fetchChunk(chunk) {
+    const apiUrl = `https://thumbnails.roblox.com/v1/badges/icons?badgeIds=${chunk.join(
+      ','
+    )}&size=150x150&format=Png&isCircular=true`;
+
+    const response = await fetch(apiUrl);
+    const data = await response.json();
+
+    if (data && data.data) {
+      data.data.forEach((badge) => {
+        imageMap[badge.targetId] = badge.imageUrl;
+        imagesLoaded += 1;
+        document.querySelector(
+          '#loading-indicator span'
+        ).textContent = `Loading badge images... (${imagesLoaded}/${totalBadges})`;
+      });
+    } else {
+      throw new Error('Failed to fetch badge images for chunk');
+    }
+  }
+
+  // Process all badges in chunks of 20
+  for (let i = 0; i < badgeIds.length; i += chunkSize) {
+    const chunk = badgeIds.slice(i, i + chunkSize);
+    await fetchChunk(chunk); // Await each chunk to avoid overwhelming the API
+  }
+
+  return imageMap;
+}
+
+async function generateBadges(gameBadges, ownedContainer) {
+  let stackList = ownedContainer.querySelector('.stack-list');
+  stackList.innerHTML = ''; // Clear the current list of badges
+
+  // Fetch badge images based on their IDs
+  const badgeIds = gameBadges.map((badge) => badge.id);
+  const badgeImages = await fetchBadgeImagesInChunks(badgeIds);
+
+  let badgesLoaded = 0;
+  const totalBadges = gameBadges.length;
+
+  // Function to update the loading indicator
+  function updateLoadingIndicator() {
+    document.querySelector(
+      '#loading-indicator span'
+    ).textContent = `Loading badges...`;
+  }
+
+  updateLoadingIndicator();
+
+  for (let badge of gameBadges) {
+    badgesLoaded++;
+
+    let badgeRow = document.createElement('li');
+    badgeRow.classList.add('stack-row', 'badge-row');
+    badgeRow.style.opacity = '1'; // Add the opacity style
+
+    const imageUrl = badgeImages[badge.id];
+
+    // Create the HTML structure for each badge
+    badgeRow.innerHTML = `
+      <div class="badge-image">
+        <a class="" href="https://www.roblox.com/badges/${
+          badge.id
+        }/${encodeURIComponent(badge.name)}">
+          <span class="thumbnail-2d-container badge-image-container">
+            <img class="" src="${imageUrl}" alt="${badge.name}" title="${
+      badge.name
+    }">
+          </span>
+        </a>
+      </div>
+      <div class="badge-content">
+        <div class="badge-data-container">
+          <div class="font-header-2 badge-name" title="${badge.name}">${
+      badge.name
+    }</div>
+          <p class="para-overflow">${
+            badge.description || '[No description available]'
+          }</p>
+          <div class="formatted-stats">
+            <p class="para-badgestat">${(
+              badge.statistics.winRatePercentage * 100
+            ).toFixed(1)}% - ${getRarityLevel(
+      (badge.statistics.winRatePercentage * 100).toFixed(1)
+    )}</p>
+            <p class="para-badgestat">${badge.statistics.awardedCount.toLocaleString()} exist</p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Append the badge row to the stack list
+    stackList.appendChild(badgeRow);
   }
 }
 
@@ -199,42 +319,6 @@ function createLoadingIndicator() {
       loadingIndicator,
       document.querySelector('.game-badges-list').nextSibling
     );
-}
-
-function clickUntilGone(element, buttonSelector) {
-  return new Promise((resolve) => {
-    let clickInterval;
-    let lastClickedTime = 0;
-    const throttleTime = 2000;
-
-    function clickHandler() {
-      const now = Date.now();
-      let seeMoreButton = element.querySelector(buttonSelector);
-
-      if (seeMoreButton && seeMoreButton.offsetParent !== null) {
-        if (now - lastClickedTime >= throttleTime) {
-          console.log('See More button is visible, clicking...');
-          seeMoreButton.click();
-          lastClickedTime = now;
-
-          badgesLoaded = document.querySelector(
-            '.badge-container .stack-list'
-          ).childElementCount;
-          document.querySelector(
-            '#loading-indicator span'
-          ).textContent = `Loading badges... (${badgesLoaded}/${totalBadges})`;
-        }
-      } else {
-        console.log('See More button no longer visible.');
-        clearInterval(clickInterval);
-        resolve();
-      }
-    }
-
-    clickInterval = setInterval(() => {
-      requestAnimationFrame(clickHandler);
-    }, throttleTime);
-  });
 }
 
 function sortBadgesByWonEver(container) {
@@ -277,105 +361,20 @@ function sortBadgesByWonEver(container) {
 }
 
 function getWonEverValue(badgeRow) {
-  let statsItems = badgeRow.querySelectorAll('.badge-stats-container li');
+  let statsItems = badgeRow.querySelectorAll('.para-badgestat');
 
   for (let item of statsItems) {
-    let label = item.querySelector('.text-label').textContent.trim();
-    if (label === 'Won Ever') {
-      let wonEverElement = item.querySelector('.badge-stats-info');
-      if (wonEverElement) {
-        let wonEverText = wonEverElement.textContent.replace(/,/g, '');
-        return parseInt(wonEverText, 10);
-      }
+    let textContent = item.textContent.trim();
+
+    // Check if the text contains the word "exist"
+    if (textContent.includes('exist')) {
+      // Extract the number from the text before "exist"
+      let wonEverText = textContent.split(' ')[0].replace(/,/g, '');
+      return parseInt(wonEverText, 10);
     }
   }
 
   return 0;
-}
-
-function extractBadgeStats(element) {
-  if (!element) {
-    console.error('No element provided.');
-    return;
-  }
-
-  let rarity = '';
-  let rarityType = '';
-  let wonEver = '';
-  let status = '';
-
-  const listItems = element.querySelectorAll('li');
-
-  listItems.forEach((item) => {
-    const label = item.querySelector('.text-label');
-    const info = item.querySelector('.font-header-2.badge-stats-info');
-
-    if (label && info) {
-      switch (label.textContent.trim()) {
-        case 'Rarity':
-          rarity = info.textContent.trim().split(' ')[0];
-          rarityType = info.querySelector('.text-rarity')
-            ? info.querySelector('.text-rarity').textContent.trim()
-            : '';
-          break;
-        case 'Won Ever':
-          wonEver = info.textContent.trim();
-          break;
-      }
-    }
-
-    const badgeInfo = item.querySelector('.font-header-2.badge-stats-info');
-    if (badgeInfo) {
-      const statusElement =
-        badgeInfo.querySelector('.text-unclaimed') ||
-        badgeInfo.querySelector('.text-claimed');
-      if (statusElement) {
-        status = statusElement.textContent.trim();
-      }
-    }
-  });
-
-  return {
-    rarity,
-    rarityType,
-    wonEver,
-    status,
-  };
-}
-
-function formatBadgeRow(container) {
-  let badgeRows = Array.from(container.querySelectorAll('.badge-row'));
-
-  if (badgeRows.length === 0) {
-    return;
-  }
-
-  badgeRows.forEach((row) => {
-    let badgeStats = extractBadgeStats(
-      row.querySelector('.badge-stats-container')
-    );
-    let badgeDetails = row.querySelector('.badge-data-container');
-
-    if (badgeStats) {
-      let rarityText = badgeStats.rarity;
-      let rarityTypeText = badgeStats.rarityType;
-      let wonEverText = badgeStats.wonEver;
-      let statusText = badgeStats.status;
-
-      let formattedStatsElement = document.createElement('div');
-      formattedStatsElement.classList.add('formatted-stats');
-
-      formattedStatsElement.innerHTML = `
-        <p class="para-badgestat">${rarityText} - ${rarityTypeText}</p>
-        <p class="para-badgestat">${wonEverText} exist</p>
-        ${statusText ? `<p class="para-badgestat">${statusText}</p>` : ''}
-      `;
-
-      badgeDetails.insertBefore(formattedStatsElement, badgeDetails.lastChild);
-
-      row.querySelector('.badge-stats-container').remove();
-    }
-  });
 }
 
 function setTitleIfOverflow(container) {

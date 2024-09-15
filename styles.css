@@ -91,6 +91,8 @@
   width: 178px !important;
   text-overflow: ellipsis !important;
   overflow: hidden !important;
+  margin-left: 6px;
+  margin-right: 6px;
 }
 
 .para-badgestat {
