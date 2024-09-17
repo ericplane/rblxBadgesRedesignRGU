@@ -2,7 +2,7 @@
 
 This is a custom Chrome extension that provides a redesign of how the badge section on the games page looks like for RoGold Ultimate users for Roblox.
 
-![image](https://github.com/user-attachments/assets/ffcd88c9-afaa-4a54-9e6d-bfabcb78380c)
+![image](https://github.com/user-attachments/assets/61d780ba-06d3-4cd7-9371-245094c6bc10)
 
 ## Installation Instructions
 
