@@ -277,6 +277,12 @@ async function generateBadges(gameBadges, ownedContainer) {
     ).textContent = `Loading badges... (${badgesLoaded}/${totalBadges})`;
   }
 
+  const { badgeAnimations } = await new Promise((resolve) => {
+    chrome.storage.local.get(['badgeAnimations'], (result) => {
+      resolve({ badgeAnimations: result.badgeAnimations !== false }); // Default to true if not set
+    });
+  });
+
   // Function to create and append badge rows
   function createBadgeRows(badgeChunk) {
     badgeChunk.forEach((badge) => {
@@ -286,6 +292,10 @@ async function generateBadges(gameBadges, ownedContainer) {
       let badgeRow = document.createElement('li');
       badgeRow.classList.add('stack-row', 'badge-row');
       badgeRow.style.opacity = '1'; // Add the opacity style
+
+      if (badgeAnimations) {
+        badgeRow.classList.add('animated');
+      }
 
       const imageUrl = badgeImages[badge.id];
 

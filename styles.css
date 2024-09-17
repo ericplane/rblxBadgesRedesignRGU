@@ -1,19 +1,14 @@
-.badge-row {
-  overflow: hidden !important;
-}
-
 .badge-container .stack-list {
   display: flex;
   flex-direction: row;
   overflow-x: scroll;
-  overflow-y: hidden;
   white-space: nowrap;
   padding: 10px;
   max-width: max-content;
   list-style: none;
   transition: all 0.5s ease-in-out;
   padding-top: 0;
-  padding-left: 0;
+  padding-left: 5px;
 }
 
 .badge-container .stack-list li {
@@ -26,6 +21,18 @@
   flex-direction: column !important;
   display: flex !important;
   place-items: center !important;
+  transition: all 0.3s ease !important;
+}
+
+.badge-container .stack-list li.animated:hover {
+  filter: brightness(110%);
+  transform: perspective(500px) rotateY(5deg) rotateX(5deg);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.5);
+  z-index: 2;
+}
+
+.badge-container .stack-list:hover li.animated:not(:hover) {
+  filter: blur(2px) !important;
 }
 
 .badge-container .stack-list li .badge-content {
