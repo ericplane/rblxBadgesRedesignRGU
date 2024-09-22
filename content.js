@@ -35,6 +35,10 @@ window.addEventListener('load', function () {
         }
 
         organizeBadges();
+
+        document.querySelectorAll('.game-carousel').forEach((element) => {
+          element.style.setProperty('border-radius', '10px', 'important');
+        });
       } else {
         console.log('Badge container not found, retrying...');
       }
