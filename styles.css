@@ -159,3 +159,7 @@
     transform: rotate(360deg);
   }
 }
+
+.game-description-container {
+  margin-right: 0 !important;
+}
