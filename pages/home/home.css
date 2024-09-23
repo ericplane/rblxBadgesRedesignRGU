@@ -1,0 +1,24 @@
+/* Friend Info Popup */
+
+.icon-chat-gray {
+  background-image: url('https://raw.githubusercontent.com/gist/valk-ryx/7b4b4c573051662efb1e89827d074276/raw/704b8ce8e144a6b71b363f5abbe5602c210fc57f/chatoutline.svg') !important;
+  background-position: 0px 0px !important;
+  filter: var(--theme-color-icons) !important;
+}
+.icon-viewdetails {
+  background-image: url('https://raw.githubusercontent.com/gist/valk-ryx/d457676db76e04afd41f237c84c0324a/raw/95c08c73cec1631c266a2259b3e0b653dd22350f/personicon.svg') !important;
+  background-position: 0px 0px !important;
+  filter: var(--theme-color-icons) !important;
+}
+.people-info-card-container .interaction-item .icon {
+  background-size: 20px !important;
+}
+.popover.bottom.people-info-card-container {
+  border-radius: 12px;
+}
+.people-info-card-container .interaction-container {
+  border-radius: 12px !important;
+}
+.border-bottom {
+  border: none !important;
+}

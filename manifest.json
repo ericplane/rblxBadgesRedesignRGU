@@ -1,20 +1,37 @@
 {
   "manifest_version": 3,
-  "name": "Roblox Badge Organizer",
-  "version": "1.4.1",
+  "name": "RoGold Ultimate Plus",
+  "version": "2.0",
   "options_page": "options.html",
   "description": "Modifies the badge section on Roblox game pages into infinite carousels and categorizes them.",
   "permissions": ["activeTab", "storage"],
   "content_scripts": [
     {
-      "matches": ["https://www.roblox.com/*"],
-      "js": ["content.js"],
-      "css": ["styles.css"],
+      "matches": ["https://www.roblox.com/home"],
+      "js": ["pages/home/home.js"],
+      "css": ["pages/home/home.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.roblox.com/games/*"],
+      "js": ["pages/games/games.js"],
+      "css": ["pages/games/games.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.roblox.com/users/*"],
+      "js": ["pages/friends/friends.js"],
+      "css": ["pages/friends/friends.css"],
       "run_at": "document_idle"
     }
   ],
   "action": {
     "default_popup": "options.html",
-    "default_title": "Badge Organizer"
+    "default_title": "RoGold Ultimate Plus"
+  },
+  "icons": {
+    "16": "resources/Extension Logos/rgu-plus-16x16.png",
+    "48": "resources/Extension Logos/rgu-plus-48x48.png",
+    "128": "resources/Extension Logos/rgu-plus-128x128.png"
   }
 }

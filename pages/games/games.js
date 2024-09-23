@@ -3,61 +3,37 @@ let totalBadges = 0;
 
 window.addEventListener('load', function () {
   console.log('Page fully loaded, including other extensions.');
+  let checkForBadgeContainer = setInterval(function () {
+    let badgeContainer = document.querySelector('.game-badges-list');
+    if (badgeContainer) {
+      clearInterval(checkForBadgeContainer);
 
-  const currentUrl = window.location.href;
+      const stackList = document.querySelector(
+        '.virtual-event-game-details-container .stack-list'
+      );
 
-  // Check if on the friend requests page
-  if (currentUrl === 'https://www.roblox.com/users/friends#!/friend-requests') {
-    moveFooterToBottom();
-  }
+      if (stackList) {
+        const itemCount = stackList.children.length;
 
-  // Check if on the games page before organizing badges
-  if (currentUrl.startsWith('https://www.roblox.com/games/')) {
-    let checkForBadgeContainer = setInterval(function () {
-      let badgeContainer = document.querySelector('.game-badges-list');
-      if (badgeContainer) {
-        clearInterval(checkForBadgeContainer);
-
-        const stackList = document.querySelector(
-          '.virtual-event-game-details-container .stack-list'
-        );
-
-        if (stackList) {
-          const itemCount = stackList.children.length;
-
-          if (itemCount === 1) {
-            // Apply 1,1 grid configuration
-            stackList.style.gridTemplateColumns = '1fr';
-          } else if (itemCount >= 2) {
-            // Apply 2,1 grid configuration
-            stackList.style.gridTemplateColumns = 'repeat(2, 1fr)';
-          }
+        if (itemCount === 1) {
+          // Apply 1,1 grid configuration
+          stackList.style.gridTemplateColumns = '1fr';
+        } else if (itemCount >= 2) {
+          // Apply 2,1 grid configuration
+          stackList.style.gridTemplateColumns = 'repeat(2, 1fr)';
         }
-
-        organizeBadges();
-
-        document.querySelectorAll('.game-carousel').forEach((element) => {
-          element.style.setProperty('border-radius', '10px', 'important');
-        });
-      } else {
-        console.log('Badge container not found, retrying...');
       }
-    }, 500);
-  }
-});
 
-// Function to move the footer to the bottom of the screen
-function moveFooterToBottom() {
-  const footer = document.querySelector('.container-footer');
-  if (footer) {
-    footer.setAttribute(
-      'style',
-      'position: fixed !important; bottom: 0 !important; left: 0;'
-    );
-  } else {
-    console.log('Footer not found');
-  }
-}
+      organizeBadges();
+
+      document.querySelectorAll('.game-carousel').forEach((element) => {
+        element.style.setProperty('border-radius', '10px', 'important');
+      });
+    } else {
+      console.log('Badge container not found, retrying...');
+    }
+  }, 500);
+});
 
 async function organizeBadges() {
   let ownedContainer = document.querySelector('.game-badges-list');
