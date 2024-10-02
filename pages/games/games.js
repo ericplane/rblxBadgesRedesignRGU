@@ -161,6 +161,7 @@ async function getBadges() {
     );
     const universeData = await universeResponse.json();
     const universeId = universeData.universeId;
+    console.log(`Universe ID: ${universeId}`);
 
     let nextPageCursor = null;
     const pageSize = 100;
